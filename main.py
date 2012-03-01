@@ -27,22 +27,33 @@ class recommendations:
            ]
   previous_recommendations = {}
 
-  def recommend_movie(self, uid):
-    return random.randint(0, len(self.movies)-1)
 
-  def recommend_movie_with_memory(self, uid):
+  def recommend_movies(self, uid, count):
+    recommended_movies = []
+    if count >= len(self.movies):
+      recommended_movies = range(len(self.movies))
+    else:
+      recommended_movies = random.sample(range(len(self.movies)), count)
+
+    return recommended_movies
+
+
+  def recommend_movies_with_memory(self, uid, count):
     if not self.previous_recommendations.has_key(uid):
       self.previous_recommendations[uid] = []
 
     movies_not_yet_recommended = [movie_id for (movie_id, movie_title) in enumerate(self.movies)
                                   if movie_id not in self.previous_recommendations[uid]]
-    print movies_not_yet_recommended
-    new_movie_id = -1
-    if len(movies_not_yet_recommended) > 0:
-      new_movie_id = random.choice(movies_not_yet_recommended)
-      self.previous_recommendations[uid].append(new_movie_id)
 
-    return new_movie_id
+    recommended_movies = []
+    if count >= len(movies_not_yet_recommended):
+      recommended_movies = movies_not_yet_recommended
+    else:
+      recommended_movies = random.sample(movies_not_yet_recommended, count)
+
+    self.previous_recommendations[uid] += recommended_movies
+    return recommended_movies
+
   
   @mimerender(
     default = 'html',
@@ -52,14 +63,9 @@ class recommendations:
     txt  = render_txt
   )
   def GET(self, uid):
-    recommended_movie = self.recommend_movie(uid)
-
-    message = ''
-    if recommended_movie >= 0:
-      message = 'You should watch %s tonight' % self.movies[recommended_movie]
-    else:
-      message = 'No more movies left for you to watch!'
-
+    user_data = web.input(count="1")
+    recommended_movies = self.recommend_movies(uid, int(user_data.count))
+    message = [self.movies[i] for i in recommended_movies]
     return {'message': message}
 
 if __name__ == "__main__":
